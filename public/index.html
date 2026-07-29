@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HINATASOFT BOT · Premium</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background: #0a0a12;
+            font-family: 'Poppins', sans-serif;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(167,139,250,0.08);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header .logo .icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 18px;
+            color: #fff;
+        }
+        .header .logo h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header .status {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .header .status.online { background: rgba(34,197,94,0.15); color: #22c55e; }
+        .header .status.offline { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .header .status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .header .status.online .dot { background: #22c55e; animation: pulse 1.5s infinite; }
+        .header .status.offline .dot { background: #ef4444; }
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+        .pairing-box {
+            display: flex;
+            gap: 10px;
+            margin: 16px 0;
+            flex-wrap: wrap;
+        }
+        .pairing-box input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(167,139,250,0.1);
+            background: rgba(255,255,255,0.03);
+            color: #e2e8f0;
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            outline: none;
+            letter-spacing: 2px;
+            min-width: 150px;
+        }
+        .pairing-box input:focus { border-color: #f59e0b; }
+        .pairing-box input::placeholder {
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 0;
+            color: #4a4a6a;
+        }
+        .pairing-box button {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .pairing-box button:hover { transform: scale(1.04); box-shadow: 0 8px 30px rgba(245,158,11,0.2); }
+        .pairing-box .pairing-status {
+            font-size: 0.7rem;
+            color: #f59e0b;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .qr-area {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.04);
+            margin: 10px 0;
+        }
+        .qr-area.show { display: flex; }
+        .qr-area img { max-width: 200px; border-radius: 12px; }
+        .qr-area .qr-text { font-size: 0.7rem; color: #8a8aa0; margin-top: 8px; }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+        .actions .btn {
+            padding: 8px 20px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .actions .btn-start { background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; }
+        .actions .btn-start:hover { transform: scale(1.04); }
+        .actions .btn-stop { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+        .actions .btn-stop:hover { transform: scale(1.04); }
+        .actions .btn-reset { background: rgba(255,255,255,0.04); color: #8a8aa0; border: 1px solid rgba(255,255,255,0.04); }
+        .actions .btn-reset:hover { background: rgba(239,68,68,0.08); color: #ef4444; }
+
+        .send-area {
+            display: flex;
+            gap: 8px;
+            margin: 12px 0;
+        }
+        .send-area input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(167,139,250,0.08);
+            background: rgba(255,255,255,0.03);
+            color: #e2e8f0;
+            font-size: 0.75rem;
+            outline: none;
+            font-family: 'Poppins', sans-serif;
+        }
+        .send-area input:focus { border-color: #f59e0b; }
+        .send-area input::placeholder { color: #4a4a6a; }
+        .send-area .btn-send {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.7rem;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s;
+        }
+        .send-area .btn-send:hover { transform: scale(1.04); }
+
+        .terminal {
+            background: rgba(0,0,0,0.4);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.65rem;
+            color: #8a8aa0;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.03);
+            margin-top: 12px;
+        }
+        .terminal .log { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.01); }
+        .terminal .log .time { color: #4a4a6a; margin-right: 8px; }
+        .terminal .log .success { color: #22c55e; }
+        .terminal .log .error { color: #ef4444; }
+        .terminal .log .warn { color: #f59e0b; }
+        .terminal .log .info { color: #a78bfa; }
+
+        .messages-area {
+            margin-top: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .messages-area .msg {
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-size: 0.7rem;
+            display: flex;
+            gap: 10px;
+            border-left: 2px solid #f59e0b;
+        }
+        .messages-area .msg .sender { color: #f59e0b; font-weight: 600; }
+        .messages-area .msg .text { color: #8a8aa0; }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.6rem;
+            color: #4a4a6a;
+        }
+        .footer i { color: #f59e0b; }
+
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: #0a0a12; }
+        ::-webkit-scrollbar-thumb { background: #f59e0b; border-radius: 10px; }
+
+        @media (max-width: 600px) {
+            .container { padding: 16px; }
+            .pairing-box { flex-direction: column; }
+            .pairing-box button { width: 100%; justify-content: center; }
+            .send-area { flex-direction: column; }
+            .send-area .btn-send { width: 100%; justify-content: center; }
+            .actions .btn { flex: 1; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- HEADER -->
+    <div class="header">
+        <div class="logo">
+            <div class="icon">H</div>
+            <h1>HINATASOFT</h1>
+        </div>
+        <div class="status offline" id="statusBadge">
+            <span class="dot"></span> Offline
+        </div>
+    </div>
+
+    <!-- PAIRING CODE -->
+    <div class="pairing-box">
+        <input type="text" id="pairingInput" placeholder="Masukkan Pairing Code..." maxlength="20" />
+        <button onclick="pairingConnect()"><i class="fas fa-link"></i> Hubungkan</button>
+        <span class="pairing-status" id="pairingStatus">⚡</span>
+    </div>
+
+    <!-- QR AREA -->
+    <div class="qr-area" id="qrArea">
+        <img id="qrImage" src="" alt="QR Code" />
+        <div class="qr-text" id="qrText">Scan QR dengan WhatsApp</div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="actions">
+        <button class="btn btn-start" onclick="botStart()"><i class="fas fa-play"></i> Start</button>
+        <button class="btn btn-stop" onclick="botStop()"><i class="fas fa-stop"></i> Stop</button>
+        <button class="btn btn-reset" onclick="botReset()"><i class="fas fa-trash-alt"></i> Hapus Sesi</button>
+    </div>
+
+    <!-- SEND MESSAGE -->
+    <div class="send-area">
+        <input type="text" id="sendInput" placeholder="628xxxxxx|Pesan" />
+        <button class="btn-send" onclick="sendMessage()"><i class="fas fa-paper-plane"></i> Kirim</button>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="messages-area" id="messagesArea">
+        <div style="color:#4a4a6a;font-size:0.65rem;text-align:center;padding:10px;">📩 Pesan masuk akan muncul di sini</div>
+    </div>
+
+    <!-- TERMINAL -->
+    <div class="terminal" id="terminal">
+        <div class="log"><span class="time">[START]</span> <span class="info">● HINATASOFT Bot siap</span></div>
+        <div class="log"><span class="time">[START]</span> <span class="info">Masukkan Pairing Code untuk koneksi</span></div>
+    </div>
+
+    <div class="footer">
+        <i class="fas fa-bolt"></i> HINATASOFT · Premium Bot
+    </div>
+</div>
+
+<script>
+const socket = io();
+let pairingCode = null;
+
+// ============================================================
+//  SOCKET.IO EVENTS
+// ============================================================
+socket.on('status', (data) => {
+    const badge = document.getElementById('statusBadge');
+    if (data.status === 'online') {
+        badge.className = 'status online';
+        badge.innerHTML = '<span class="dot"></span> Online';
+        document.getElementById('pairingStatus').textContent = '✅ Online';
+        document.getElementById('pairingStatus').style.color = '#22c55e';
+    } else {
+        badge.className = 'status offline';
+        badge.innerHTML = '<span class="dot"></span> Offline';
+    }
+});
+
+socket.on('qr', (qr) => {
+    const area = document.getElementById('qrArea');
+    const img = document.getElementById('qrImage');
+    area.classList.add('show');
+    img.src = qr;
+    document.getElementById('qrText').textContent = '📱 Scan QR dengan WhatsApp';
+    addLog('📱 QR Code siap discan', 'info');
+});
+
+socket.on('pairingCode', (code) => {
+    pairingCode = code;
+    document.getElementById('pairingStatus').textContent = `🔗 Kode: ${code}`;
+    document.getElementById('pairingStatus').style.color = '#22c55e';
+    addLog(`🔗 Pairing Code: ${code}`, 'success');
+});
+
+socket.on('log', (data) => {
+    addLog(data.msg, data.type);
+});
+
+socket.on('message', (data) => {
+    const area = document.getElementById('messagesArea');
+    const div = document.createElement('div');
+    div.className = 'msg';
+    div.innerHTML = `<span class="sender">${data.sender}</span><span class="text">${data.text}</span>`;
+    area.prepend(div);
+    if (area.children.length > 20) area.removeChild(area.lastChild);
+});
+
+socket.on('logs', (logs) => {
+    logs.forEach(log => addLog(log.msg, log.type));
+});
+
+socket.on('messages', (msgs) => {
+    msgs.forEach(msg => {
+        const area = document.getElementById('messagesArea');
+        const div = document.createElement('div');
+        div.className = 'msg';
+        div.innerHTML = `<span class="sender">${msg.sender}</span><span class="text">${msg.text}</span>`;
+        area.appendChild(div);
+    });
+});
+
+// ============================================================
+//  FUNGSI
+// ============================================================
+function addLog(msg, type = 'info') {
+    const terminal = document.getElementById('terminal');
+    const time = new Date().toLocaleTimeString('id-ID', { hour12: false });
+    const div = document.createElement('div');
+    div.className = 'log';
+    div.innerHTML = `<span class="time">[${time}]</span> <span class="${type}">${msg}</span>`;
+    terminal.prepend(div);
+    if (terminal.children.length > 50) terminal.removeChild(terminal.lastChild);
+}
+
+async function pairingConnect() {
+    const input = document.getElementById('pairingInput');
+    const code = input.value.trim();
+    if (!code) {
+        document.getElementById('pairingStatus').textContent = '❌ Masukkan kode!';
+        document.getElementById('pairingStatus').style.color = '#ef4444';
+        return;
+    }
+    
+    document.getElementById('pairingStatus').textContent = '⏳ Menghubungkan...';
+    document.getElementById('pairingStatus').style.color = '#f59e0b';
+    
+    try {
+        const res = await fetch('/api/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pairingCode: code })
+        });
+        const data = await res.json();
+        if (data.success) {
+            addLog(`🔗 Pairing Code: ${code} dikirim`, 'success');
+        } else {
+            addLog(`❌ ${data.error}`, 'error');
+        }
+    } catch (error) {
+        addLog(`❌ Gagal: ${error.message}`, 'error');
+    }
+}
+
+async function botStart() {
+    try {
+        const res = await fetch('/api/start', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) addLog('🚀 Bot mulai...', 'info');
+        else addLog(`❌ ${data.error}`, 'error');
+    } catch (error) {
+        addLog(`❌ Gagal: ${error.message}`, 'error');
+    }
+}
+
+async function botStop() {
+    try {
+        const res = await fetch('/api/stop', { method: 'POST' });
+        const data = await res.json();
+        addLog(data.message, 'info');
+    } catch (error) {
+        addLog(`❌ Gagal: ${error.message}`, 'error');
+    }
+}
+
+async function botReset() {
+    try {
+        const res = await fetch('/api/reset', { method: 'POST' });
+        const data = await res.json();
+        addLog(data.message, 'warn');
+        document.getElementById('qrArea').classList.remove('show');
+        document.getElementById('pairingStatus').textContent = '⚡';
+        document.getElementById('pairingStatus').style.color = '#f59e0b';
+    } catch (error) {
+        addLog(`❌ Gagal: ${error.message}`, 'error');
+    }
+}
+
+async function sendMessage() {
+    const input = document.getElementById('sendInput');
+    const value = input.value.trim();
+    if (!value) {
+        addLog('⚠️ Masukkan nomor|pesan!', 'warn');
+        return;
+    }
+    const parts = value.split('|');
+    if (parts.length < 2) {
+        addLog('⚠️ Format: 628xxxxxx|Pesan', 'warn');
+        return;
+    }
+    const phone = parts[0].trim();
+    const message = parts.slice(1).join('|').trim();
+    
+    try {
+        const res = await fetch('/api/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, message })
+        });
+        const data = await res.json();
+        if (data.success) {
+            addLog(`✅ Pesan terkirim ke ${phone}`, 'success');
+            input.value = '';
+        } else {
+            addLog(`❌ ${data.error}`, 'error');
+        }
+    } catch (error) {
+        addLog(`❌ Gagal: ${error.message}`, 'error');
+    }
+}
+</script>
+</body>
+</html>
